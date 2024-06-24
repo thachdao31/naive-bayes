@@ -58,6 +58,42 @@
 # new_patient_pred = model.predict(new_patient_df)
 # new_patient_proba = model.predict_proba(new_patient_df)
 
+# in ra đếm các 
+# In ra số người trong tập kiểm tra có giá trị "infected" là 0
+# print("Number of people with 'infected' value 0 in test set:", y_train.value_counts()[1])
+
+# Trích xuất các dòng có giá trị 'infected' là 1 từ DataFrame df
+# infected_data = df[df['infected'] == 1]
+
+# Tính giá trị trung bình của cột 'time' cho những người bị AIDS
+# average_time_for_infected = infected_data.var()
+
+# In ra giá trị trung bình của thuộc tính 'time' cho những người bị AIDS
+# print("Average time for infected individuals:", average_time_for_infected)
+
+# Lấy các xác suất dự đoán cho nhãn 0 (không mắc AIDS)
+# probabilities_no_aids = model.theta_[1]
+
+# Lấy tên của các features
+# features = X.columns
+
+# Hiển thị kết quả
+# print("Probability of not being infected (AIDS=0) for each feature:")
+# for feature, probability in zip(features, probabilities_no_aids):
+#     print(f"{feature}: {probability}")
+
+# Lấy các xác suất dự đoán cho nhãn 1 (mắc AIDS)
+# probabilities_aids = model.theta_[1]
+
+# # Lấy tên của các features
+# features = X.columns
+
+# # Hiển thị kết quả
+# print("Probability of being infected (AIDS=1) for each feature:")
+# for feature, probability in zip(features, probabilities_aids):
+#     print(f"{feature}: {probability}")
+
+
 # # Hiển thị kết quả dự đoán
 # print("Prediction for new patient:", new_patient_pred[0])
 # print("Probability of being infected:", new_patient_proba[0][1])
@@ -82,9 +118,16 @@ from sklearn.metrics import accuracy_score, classification_report
 import numpy as np
 
 from PyQt5 import QtWidgets, QtCore, QtGui
+import pyodbc
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
+
+        self.df = self.connectToDb()
+        # Sử dụng DataFrame để thực hiện các tác vụ khác
+        self.X = self.df.drop(columns=['infected'])
+        self.y = self.df['infected']
+
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1080, 600)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -480,15 +523,8 @@ class Ui_MainWindow(object):
         }
 
     def naive_bayes(self):
-        # Bước 1: Đọc dữ liệu từ tệp CSV
-        df = pd.read_csv('AIDS_Classification_50000.csv')
-
-        # Bước 2: Tách biến đầu vào (features) và biến mục tiêu (target)
-        X = df.drop(columns=['infected'])
-        y = df['infected']
-
         # Bước 3: Chia dữ liệu thành tập huấn luyện và tập kiểm tra
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, test_size=0.2, random_state=42)
 
         # Bước 4: Triển khai mô hình Naive Bayes Gauss và huấn luyện
         model = GaussianNB()
@@ -499,8 +535,8 @@ class Ui_MainWindow(object):
         accuracy = accuracy_score(y_test, y_pred)
 
         # Hiển thị kết quả
-        print("Accuracy:", accuracy)
-        print("Classification Report:\n", classification_report(y_test, y_pred))
+        # print("Accuracy:", accuracy)
+        # print("Classification Report:\n", classification_report(y_test, y_pred))
 
 
         # Bước 6: Nhập dữ liệu của bệnh nhân mới
@@ -543,6 +579,16 @@ class Ui_MainWindow(object):
         print("Probability of not being infected:", new_patient_proba[0][0])
         self.plainTextEdit_27.setPlainText(str(new_patient_proba[0][1]))
         self.plainTextEdit_28.setPlainText(str(new_patient_proba[0][0]))
+
+    def connectToDb(self):
+        # Thông tin kết nối SQL Server
+        server = 'localhost'
+        database = 'naive_bayes'
+        conn = pyodbc.connect(f'DRIVER=ODBC Driver 17 for SQL Server;SERVER={server};DATABASE={database};Trusted_Connection=yes;')
+        sql_query = "SELECT * FROM dbo.aids"
+        df = pd.read_sql(sql_query, conn)
+        return df
+
 
 if __name__ == "__main__":
     import sys
